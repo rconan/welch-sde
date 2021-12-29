@@ -1,14 +1,14 @@
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 use std::time::Instant;
-use welch_sde::Welch;
+use welch_sde::SpectralDensity;
 
 fn main() {
     let n = 1e5 as usize;
     let fs = 10e3;
     let amp = 2. * 2f64.sqrt();
     let freq = 1550f64;
-    let noise_power = 0.001 * fs;
+    let noise_power = 0.001 * fs / 2.;
     let signal: Vec<f64> = (0..n)
         .map(|i| i as f64 / fs)
         .map(|t| {
@@ -17,23 +17,28 @@ fn main() {
         })
         .collect();
 
-    let welch = Welch::builder(&signal, fs).n_segment(8).build();
+    let welch = SpectralDensity::builder(&signal, fs).build();
     println!("{}", welch);
     let now = Instant::now();
-    let ps = welch.spectral_density();
+    let sd = welch.spectral_density();
     println!(
-        "Spectral density esimated in {}ms",
+        "Spectral density estimated in {}ms",
         now.elapsed().as_millis()
     );
-    let noise_floor = ps.iter().skip(ps.len() / 2).cloned().sum::<f64>() / ((ps.len() / 2) as f64);
+    let noise_floor =
+        2. * sd.iter().skip(sd.len() / 2).cloned().sum::<f64>() / ((sd.len() / 2) as f64);
     println!("Noise floor: {:.3e}", noise_floor);
 
     let _: complot::LinLog = (
-        ps.frequency()
+        sd.frequency()
             .into_iter()
-            .zip(&(*ps))
-            .map(|(x, &y)| (x, vec![y])),
-        None,
+            .zip(&(*sd))
+            .map(|(x, &y)| (x, vec![2. * y])),
+        complot::complot!(
+            "spectral_density.png",
+            xlabel = "Frequency [Hz]",
+            ylabel = "Spectral density [s^2/Hz]"
+        ),
     )
         .into();
 }

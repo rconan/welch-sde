@@ -7,13 +7,9 @@ pub trait Window<T: Signal> {
     /// Return the window sampling weights
     fn weights(&self) -> &[T];
     /// Return the sum of the squared weights
-    fn sqr_sum(&self) -> T {
-        self.weights().iter().map(|&w| w * w).sum()
-    }
+    fn sqr_sum(&self) -> T;
     /// Return the square of the weights sum
-    fn sum_sqr(&self) -> T {
-        self.weights().iter().cloned().sum::<T>().powi(2)
-    }
+    fn sum_sqr(&self) -> T;
 }
 /// Hann window
 pub struct Hann<T> {
@@ -33,5 +29,33 @@ impl<T: Signal> Window<T> for Hann<T> {
     }
     fn weights(&self) -> &[T] {
         self.weight.as_slice()
+    }
+    fn sqr_sum(&self) -> T {
+        self.weights().iter().map(|&w| w * w).sum()
+    }
+    fn sum_sqr(&self) -> T {
+        self.weights().iter().cloned().sum::<T>().powi(2)
+    }
+}
+/// One window
+///
+/// A window where all weights are 1
+pub struct One<T> {
+    weight: Vec<T>,
+}
+impl<T: Signal> Window<T> for One<T> {
+    fn new(n: usize) -> Self {
+        Self {
+            weight: vec![T::one(); n],
+        }
+    }
+    fn weights(&self) -> &[T] {
+        self.weight.as_slice()
+    }
+    fn sqr_sum(&self) -> T {
+        T::from_usize(self.weight.len()).unwrap()
+    }
+    fn sum_sqr(&self) -> T {
+        self.sqr_sum().powi(2)
     }
 }

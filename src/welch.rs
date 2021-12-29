@@ -1,4 +1,4 @@
-use crate::{Hann, Signal, SpectralDensity, Window};
+use crate::{Hann, Periodogram, Signal, Window};
 use num_complex::Complex;
 use num_traits::Zero;
 use rustfft::{algorithm::Radix4, Fft, FftDirection};
@@ -17,12 +17,12 @@ pub struct Builder<'a, T: Signal, W: Window<T> = Hann<T>> {
     /// the signal to estimate the spectral density for
     signal: &'a [T],
     /// the signal sampling frequency `[Hz]`
-    fs: T,
+    fs: Option<T>,
     window: PhantomData<W>,
 }
 impl<'a, T: Signal, W: Window<T>> Builder<'a, T, W> {
-    /// Creates a Welch [Builder] from a given signal sampled at `fs`Hz
-    pub fn new(signal: &'a [T], fs: T) -> Self {
+    /// Creates a Welch [Builder] from a given signal
+    pub fn new(signal: &'a [T]) -> Self {
         let k: usize = 4;
         let a: f64 = 0.5;
         let l = (signal.len() as f64 / (k as f64 * (1. - a) + a)).trunc() as usize;
@@ -32,8 +32,15 @@ impl<'a, T: Signal, W: Window<T>> Builder<'a, T, W> {
             overlap: a,
             dft_max_size: 4096,
             signal,
-            fs,
+            fs: None,
             window: PhantomData,
+        }
+    }
+    /// Sets the signal sampling frequency
+    pub fn sampling_frequency(self, fs: T) -> Self {
+        Self {
+            fs: Some(fs),
+            ..self
         }
     }
     /// Sets the segment overlapping fraction (`0<a<1`)
@@ -83,7 +90,7 @@ impl<'a, T: Signal, W: Window<T>> Builder<'a, T, W> {
             dft_size: m,
             overlap_idx: l - (l as f64 * self.overlap).round() as usize,
             signal: self.signal,
-            fs: self.fs,
+            fs: self.fs.unwrap_or_else(T::one),
             window: W::new(l),
         }
     }
@@ -106,7 +113,7 @@ pub struct Welch<'a, T: Signal, W: Window<T> = Hann<T>> {
     /// segments windowing function
     pub window: W,
 }
-impl<'a, T: Signal> Display for Welch<'a, T> {
+impl<'a, T: Signal, W: Window<T>> Display for Welch<'a, T, W> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Welch spectral density estimator:")?;
         writeln!(f, " - number of segment: {:>6}", self.n_segment)?;
@@ -116,13 +123,13 @@ impl<'a, T: Signal> Display for Welch<'a, T> {
             " - overlap size     : {:>6}",
             self.segment_size - self.overlap_idx
         )?;
-        writeln!(f, " - dft size         : {:>6}", self.dft_size)
+        write!(f, " - dft size         : {:>6}", self.dft_size)
     }
 }
 impl<'a, T: Signal, W: Window<T>> Welch<'a, T, W> {
-    /// Returns [Welch] [Builder] providing the `signal` sampled at `fs`Hz
-    pub fn builder(signal: &'a [T], fs: T) -> Builder<'a, T, W> {
-        Builder::new(signal, fs)
+    /// Returns [Welch] [Builder] providing the `signal`
+    pub fn builder(signal: &'a [T]) -> Builder<'a, T, W> {
+        Builder::new(signal)
     }
     // Splits the signal into overlapping segments and applies the window
     fn windowed_segments(&self) -> Vec<Complex<T>> {
@@ -153,10 +160,10 @@ impl<'a, T: Signal, W: Window<T>> Welch<'a, T, W> {
         buffer
     }
     // Returns the signal spectral density (signal unit squared per Hertz)
-    pub fn spectral_density(&self) -> SpectralDensity<T> {
+    pub fn spectral_density(&self) -> Periodogram<T> {
         let n = self.dft_size / 2;
         let u = (self.window.sqr_sum() * T::from_usize(self.n_segment).unwrap() * self.fs).recip();
-        SpectralDensity((
+        Periodogram(
             self.fs,
             self.dfts()
                 .chunks(self.dft_size)
@@ -168,6 +175,24 @@ impl<'a, T: Signal, W: Window<T>> Welch<'a, T, W> {
                 .into_iter()
                 .map(|x| x * u)
                 .collect(),
-        ))
+        )
+    }
+    // Returns the signal power spectrum (signal unit squared)
+    pub fn power_spectrum(&self) -> Periodogram<T> {
+        let n = self.dft_size / 2;
+        let u = (self.window.sum_sqr() * T::from_usize(self.n_segment).unwrap()).recip();
+        Periodogram(
+            self.fs,
+            self.dfts()
+                .chunks(self.dft_size)
+                .map(|dft| dft.iter().take(n).map(|x| x.norm_sqr()).collect::<Vec<T>>())
+                .fold(vec![T::zero(); n], |mut a, p| {
+                    a.iter_mut().zip(p).for_each(|(a, p)| *a += p);
+                    a
+                })
+                .into_iter()
+                .map(|x| x * u)
+                .collect(),
+        )
     }
 }

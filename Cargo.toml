@@ -11,6 +11,6 @@ num-traits = "0.2.14"
 rustfft = "6.0.1"
 
 [dev-dependencies]
-complot = { path = "../complot", features = ["png"] }
+complot = "0.3.2"
 rand = "0.8.4"
 rand_distr = "0.4.2"
