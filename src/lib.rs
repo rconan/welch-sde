@@ -1,6 +1,6 @@
 //! # Spectral density and power spectrum estimation with Welch method
 //!
-//! The Welch's method for the estimation of the spectral density of a *stationnary and
+//! The Welch's method for the estimation of the periodogram of a *stationnary and
 //! zero-mean* signal  involves splitting the signal in overlapping segments, multiplying
 //! each segment with a predeterming window and computing the discrete Fourier transform
 //! of each windowed segment.
@@ -26,7 +26,7 @@
 //!use rand::prelude::*;
 //!use rand_distr::StandardNormal;
 //!use std::time::Instant;
-//!use welch_sde::SpectralDensity;
+//!use welch_sde::{SpectralDensity, Build, Hann};
 //!
 //!fn main() {
 //!    let n = 1e5 as usize;
@@ -43,17 +43,18 @@
 //!        })
 //!        .collect();
 //!
-//!    let welch = SpectralDensity::builder(&signal, fs).build();
+//!    let welch: SpectralDensity<f64, Hann<f64>> =
+//!        SpectralDensity::<f64, Hann<f64>>::builder(&signal, fs).build();
 //!    println!("{}", welch);
 //!    let now = Instant::now();
-//!    let sd = welch.spectral_density();
+//!    let sd = welch.periodogram();
 //!    println!(
 //!        "Spectral density estimated in {}ms",
 //!        now.elapsed().as_millis()
 //!    );
 //!    let h = sd.len() / 2;
 //!    let noise_floor = 2. * sd.iter().skip(h).cloned().sum::<f64>() / (h as f64);
-//!    println!("Noise floor: {:.3e}", noise_floor);
+//!    println!("Noise floor: {:.3}", noise_floor);
 //!
 //!    let _: complot::LinLog = (
 //!        sd.frequency()
@@ -74,7 +75,7 @@
 //!use rand::prelude::*;
 //!use rand_distr::StandardNormal;
 //!use std::time::Instant;
-//!use welch_sde::PowerSpectrum;
+//!use welch_sde::{PowerSpectrum, Build, One};
 //!
 //!fn main() {
 //!    let n = 1e5 as usize;
@@ -82,11 +83,12 @@
 //!        .map(|_| thread_rng().sample::<f64, StandardNormal>(StandardNormal))
 //!        .collect();
 //!
-//!    let welch = PowerSpectrum::builder(&signal).build();
+//!    let welch: PowerSpectrum<f64, One<f64>> =
+//!        PowerSpectrum::<f64, One<f64>>::builder(&signal).build();
 //!    println!("{}", welch);
 //!
 //!    let now = Instant::now();
-//!    let ps = welch.power_spectrum();
+//!    let ps = welch.periodogram();
 //!    println!(
 //!        "Power spectrum estimated in {}ms",
 //!        now.elapsed().as_millis()
@@ -94,8 +96,8 @@
 //!
 //!    let mean = ps[0];
 //!    let variance = 2. * ps.iter().sum::<f64>();
-//!    println!("mean    : {:.3e}", mean);
-//!    println!("variance: {:.3e}", variance);
+//!    println!("mean    : {:.3}", mean);
+//!    println!("variance: {:.3}", variance);
 //!
 //!    let _: complot::LinLog = (
 //!        ps.frequency()
@@ -112,12 +114,18 @@
 //!}
 //!```
 
+mod builder;
+mod power_spectrum;
+mod spectral_density;
 mod welch;
 mod window;
+pub use builder::Builder;
 use num_traits::Float;
+pub use power_spectrum::PowerSpectrum;
 use rustfft::FftNum;
-use std::{marker::PhantomData, ops::Deref};
-pub use welch::{Builder, PowerSpectrumPeriodogram, SpectralDensityPeriodogram, Welch};
+pub use spectral_density::SpectralDensity;
+use std::ops::Deref;
+pub use welch::{PowerSpectrumPeriodogram, SpectralDensityPeriodogram, Welch};
 pub use window::{Hann, One, Window};
 
 /// The trait the signal type `T` must implement
@@ -128,17 +136,9 @@ pub trait Signal:
 impl Signal for f64 {}
 impl Signal for f32 {}
 
-/// Power spectrum default type
-pub type PowerSpectrum<'a, T> = Welch<'a, T, One<T>>;
-/// Spectral density default type
-pub struct SpectralDensity<'a, T: Signal> {
-    phantom: PhantomData<&'a T>,
-}
-impl<'a, T: Signal> SpectralDensity<'a, T> {
-    /// Returns [Welch] [Builder] providing the `signal` sampled at `fs`Hz
-    pub fn builder(signal: &'a [T], fs: T) -> Builder<'a, T> {
-        Builder::new(signal).sampling_frequency(fs)
-    }
+/// [Builder] trait
+pub trait Build<T: Signal, W: Window<T>, E> {
+    fn build(&self) -> E;
 }
 
 /// Signal periodogram

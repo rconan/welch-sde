@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 use std::time::Instant;
-use welch_sde::{SpectralDensity, SpectralDensityPeriodogram};
+use welch_sde::{Build, Hann, SpectralDensity};
 
 fn main() {
     let n = 1e5 as usize;
@@ -17,7 +17,8 @@ fn main() {
         })
         .collect();
 
-    let welch = SpectralDensity::builder(&signal, fs).build();
+    let welch: SpectralDensity<f64, Hann<f64>> =
+        SpectralDensity::<f64, Hann<f64>>::builder(&signal, fs).build();
     println!("{}", welch);
     let now = Instant::now();
     let sd = welch.periodogram();
@@ -27,7 +28,7 @@ fn main() {
     );
     let noise_floor =
         2. * sd.iter().skip(sd.len() / 2).cloned().sum::<f64>() / ((sd.len() / 2) as f64);
-    println!("Noise floor: {:.3e}", noise_floor);
+    println!("Noise floor: {:.3}", noise_floor);
 
     let _: complot::LinLog = (
         sd.frequency()

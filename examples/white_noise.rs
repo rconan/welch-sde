@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 use std::time::Instant;
-use welch_sde::{PowerSpectrum, PowerSpectrumPeriodogram};
+use welch_sde::{Build, One, PowerSpectrum};
 
 fn main() {
     let n = 1e6 as usize;
@@ -9,7 +9,8 @@ fn main() {
         .map(|_| thread_rng().sample::<f64, StandardNormal>(StandardNormal))
         .collect();
 
-    let welch = PowerSpectrum::builder(&signal).build();
+    let welch: PowerSpectrum<f64, One<f64>> =
+        PowerSpectrum::<f64, One<f64>>::builder(&signal).build();
     println!("{}", welch);
 
     let now = Instant::now();
@@ -21,8 +22,8 @@ fn main() {
 
     let mean = ps[0];
     let variance = 2. * ps.iter().sum::<f64>();
-    println!("mean    : {:.3e}", mean);
-    println!("variance: {:.3e}", variance);
+    println!("mean    : {:.3}", mean);
+    println!("variance: {:.3}", variance);
 
     let _: complot::LinLog = (
         ps.frequency()

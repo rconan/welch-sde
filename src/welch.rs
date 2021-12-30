@@ -1,100 +1,8 @@
-use crate::{Hann, Periodogram, Signal, Window};
+use crate::{Build, Builder, Hann, Periodogram, Signal, Window};
 use num_complex::Complex;
 use num_traits::Zero;
 use rustfft::{algorithm::Radix4, Fft, FftDirection};
-use std::{fmt::Display, marker::PhantomData};
-
-/// Builder for [Welch]
-pub struct Builder<'a, T: Signal, W: Window<T> = Hann<T>> {
-    /// number of segments (`k`)
-    n_segment: usize,
-    /// size of each segment (`l`)
-    segment_size: usize,
-    /// segment overlapping fraction (`0<a<1`)
-    overlap: f64,
-    /// maximum size of the discrete Fourier transform (`p`)
-    dft_max_size: usize,
-    /// the signal to estimate the spectral density for
-    signal: &'a [T],
-    /// the signal sampling frequency `[Hz]`
-    fs: Option<T>,
-    window: PhantomData<W>,
-}
-impl<'a, T: Signal, W: Window<T>> Builder<'a, T, W> {
-    /// Creates a Welch [Builder] from a given signal
-    pub fn new(signal: &'a [T]) -> Self {
-        let k: usize = 4;
-        let a: f64 = 0.5;
-        let l = (signal.len() as f64 / (k as f64 * (1. - a) + a)).trunc() as usize;
-        Self {
-            n_segment: k,
-            segment_size: l,
-            overlap: a,
-            dft_max_size: 4096,
-            signal,
-            fs: None,
-            window: PhantomData,
-        }
-    }
-    /// Sets the signal sampling frequency
-    pub fn sampling_frequency(self, fs: T) -> Self {
-        Self {
-            fs: Some(fs),
-            ..self
-        }
-    }
-    /// Sets the segment overlapping fraction (`0<a<1`)
-    pub fn overlap(self, overlap: f64) -> Self {
-        let k = self.n_segment;
-        let a = overlap;
-        let l = (self.signal.len() as f64 / (k as f64 * (1. - a) + a)).trunc() as usize;
-        Self {
-            segment_size: l,
-            overlap: a,
-            ..self
-        }
-    }
-    /// Sets the number of segments (`k`)
-    pub fn n_segment(self, n_segment: usize) -> Self {
-        let k = n_segment;
-        let a = self.overlap;
-        let l = (self.signal.len() as f64 / (k as f64 * (1. - a) + a)).trunc() as usize;
-        Self {
-            n_segment: k,
-            segment_size: l,
-            ..self
-        }
-    }
-    /// Sets the log2 of the maximum size of the discrete Fourier transform (`p`)
-    pub fn dft_log2_max_size(self, dft_log2_max_size: usize) -> Self {
-        Self {
-            dft_max_size: 2 << (dft_log2_max_size - 1),
-            ..self
-        }
-    }
-    /// Returns the [Welch] spectral density estimator
-    pub fn build(self) -> Welch<'a, T, W> {
-        let mut k = self.n_segment;
-        let mut l = self.segment_size;
-        let mut m = l.next_power_of_two();
-        if m > self.dft_max_size {
-            l = self.dft_max_size;
-            let a = self.overlap;
-            k = ((self.signal.len() as f64 - l as f64 * a) / (l as f64 * (1. - a))).trunc()
-                as usize;
-            m = l;
-        }
-        Welch {
-            n_segment: k,
-            segment_size: l,
-            dft_size: m,
-            overlap_idx: l - (l as f64 * self.overlap).round() as usize,
-            signal: self.signal,
-            fs: self.fs.unwrap_or_else(T::one),
-            window: W::new(l),
-        }
-    }
-}
+use std::fmt::Display;
 
 /// Welch spectral density estimator
 pub struct Welch<'a, T: Signal, W: Window<T> = Hann<T>> {
@@ -126,9 +34,32 @@ impl<'a, T: Signal, W: Window<T>> Display for Welch<'a, T, W> {
         write!(f, " - dft size         : {:>6}", self.dft_size)
     }
 }
+impl<'a, T: Signal, W: Window<T>> Build<T, W, Welch<'a, T, W>> for Builder<'a, T> {
+    fn build(&self) -> Welch<'a, T, W> {
+        let mut k = self.n_segment;
+        let mut l = self.segment_size;
+        let mut m = l.next_power_of_two();
+        if m > self.dft_max_size {
+            l = self.dft_max_size;
+            let a = self.overlap;
+            k = ((self.signal.len() as f64 - l as f64 * a) / (l as f64 * (1. - a))).trunc()
+                as usize;
+            m = l;
+        }
+        Welch {
+            n_segment: k,
+            segment_size: l,
+            dft_size: m,
+            overlap_idx: l - (l as f64 * self.overlap).round() as usize,
+            signal: self.signal,
+            fs: self.fs.unwrap_or_else(T::one),
+            window: W::new(l),
+        }
+    }
+}
 impl<'a, T: Signal, W: Window<T>> Welch<'a, T, W> {
     /// Returns [Welch] [Builder] providing the `signal`
-    pub fn builder(signal: &'a [T]) -> Builder<'a, T, W> {
+    pub fn builder(signal: &'a [T]) -> Builder<'a, T> {
         Builder::new(signal)
     }
     // Splits the signal into overlapping segments and applies the window
