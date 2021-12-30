@@ -117,8 +117,16 @@ mod window;
 use num_traits::Float;
 use rustfft::FftNum;
 use std::{marker::PhantomData, ops::Deref};
-pub use welch::{Builder, Welch};
+pub use welch::{Builder, PowerSpectrumPeriodogram, SpectralDensityPeriodogram, Welch};
 pub use window::{Hann, One, Window};
+
+/// The trait the signal type `T` must implement
+pub trait Signal:
+    Float + FftNum + std::iter::Sum + std::ops::SubAssign + std::ops::AddAssign
+{
+}
+impl Signal for f64 {}
+impl Signal for f32 {}
 
 /// Power spectrum default type
 pub type PowerSpectrum<'a, T> = Welch<'a, T, One<T>>;
@@ -133,17 +141,7 @@ impl<'a, T: Signal> SpectralDensity<'a, T> {
     }
 }
 
-/// The trait the signal type `T` must implement
-pub trait Signal:
-    Float + FftNum + std::iter::Sum + std::ops::SubAssign + std::ops::AddAssign
-{
-}
-impl Signal for f64 {}
-impl Signal for f32 {}
-
-/// Signal spectral density
-///
-/// The spectral density is given in units of the signal units squared per Hertz
+/// Signal periodogram
 #[derive(Debug)]
 pub struct Periodogram<T: Signal>(T, Vec<T>);
 impl<T: Signal> Deref for Periodogram<T> {
@@ -154,7 +152,7 @@ impl<T: Signal> Deref for Periodogram<T> {
     }
 }
 impl<T: Signal> Periodogram<T> {
-    /// Returns the frequency vector in Hz for the given signal sampling frequency
+    /// Returns the frequency vector in Hz
     pub fn frequency(&self) -> Vec<T> {
         let n = self.1.len();
         let fs = self.0;

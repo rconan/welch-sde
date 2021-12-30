@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 use std::time::Instant;
-use welch_sde::SpectralDensity;
+use welch_sde::{SpectralDensity, SpectralDensityPeriodogram};
 
 fn main() {
     let n = 1e5 as usize;
@@ -20,7 +20,7 @@ fn main() {
     let welch = SpectralDensity::builder(&signal, fs).build();
     println!("{}", welch);
     let now = Instant::now();
-    let sd = welch.spectral_density();
+    let sd = welch.periodogram();
     println!(
         "Spectral density estimated in {}ms",
         now.elapsed().as_millis()

@@ -1,10 +1,10 @@
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 use std::time::Instant;
-use welch_sde::PowerSpectrum;
+use welch_sde::{PowerSpectrum, PowerSpectrumPeriodogram};
 
 fn main() {
-    let n = 1e5 as usize;
+    let n = 1e6 as usize;
     let signal: Vec<f64> = (0..n)
         .map(|_| thread_rng().sample::<f64, StandardNormal>(StandardNormal))
         .collect();
@@ -13,7 +13,7 @@ fn main() {
     println!("{}", welch);
 
     let now = Instant::now();
-    let ps = welch.power_spectrum();
+    let ps = welch.periodogram();
     println!(
         "Power spectrum estimated in {}ms",
         now.elapsed().as_millis()

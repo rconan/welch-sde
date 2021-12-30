@@ -159,8 +159,21 @@ impl<'a, T: Signal, W: Window<T>> Welch<'a, T, W> {
         fft.process(&mut buffer);
         buffer
     }
-    // Returns the signal spectral density (signal unit squared per Hertz)
-    pub fn spectral_density(&self) -> Periodogram<T> {
+}
+
+/// Interface to the spatial density periodogram
+pub trait SpectralDensityPeriodogram<T: Signal> {
+    /// Returns the signal spectral density (signal unit squared per Hertz)
+    fn periodogram(&self) -> Periodogram<T>;
+}
+/// Interface to the power spectrum periodogram
+pub trait PowerSpectrumPeriodogram<T: Signal> {
+    /// Returns the signal power spectrum (signal unit squared)
+    fn periodogram(&self) -> Periodogram<T>;
+}
+
+impl<'a, T: Signal, W: Window<T>> SpectralDensityPeriodogram<T> for Welch<'a, T, W> {
+    fn periodogram(&self) -> Periodogram<T> {
         let n = self.dft_size / 2;
         let u = (self.window.sqr_sum() * T::from_usize(self.n_segment).unwrap() * self.fs).recip();
         Periodogram(
@@ -177,8 +190,9 @@ impl<'a, T: Signal, W: Window<T>> Welch<'a, T, W> {
                 .collect(),
         )
     }
-    // Returns the signal power spectrum (signal unit squared)
-    pub fn power_spectrum(&self) -> Periodogram<T> {
+}
+impl<'a, T: Signal, W: Window<T>> PowerSpectrumPeriodogram<T> for Welch<'a, T, W> {
+    fn periodogram(&self) -> Periodogram<T> {
         let n = self.dft_size / 2;
         let u = (self.window.sum_sqr() * T::from_usize(self.n_segment).unwrap()).recip();
         Periodogram(
