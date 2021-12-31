@@ -1,6 +1,6 @@
 use crate::Signal;
 
-/// Builder for [crate::Welch]
+/// Builder for [Welch](crate::Welch)
 pub struct Builder<'a, T: Signal> {
     /// number of segments (`k`)
     pub n_segment: usize,
