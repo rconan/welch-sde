@@ -26,7 +26,7 @@
 //!use rand::prelude::*;
 //!use rand_distr::StandardNormal;
 //!use std::time::Instant;
-//!use welch_sde::{SpectralDensity, Build, Hann};
+//!use welch_sde::{SpectralDensity, Build};
 //!
 //!fn main() {
 //!    let n = 1e5 as usize;
@@ -43,8 +43,8 @@
 //!        })
 //!        .collect();
 //!
-//!    let welch: SpectralDensity<f64, Hann<f64>> =
-//!        SpectralDensity::<f64, Hann<f64>>::builder(&signal, fs).build();
+//!    let welch: SpectralDensity<f64> =
+//!        SpectralDensity::<f64>::builder(&signal, fs).build();
 //!    println!("{}", welch);
 //!    let now = Instant::now();
 //!    let sd = welch.periodogram();
@@ -75,7 +75,7 @@
 //!use rand::prelude::*;
 //!use rand_distr::StandardNormal;
 //!use std::time::Instant;
-//!use welch_sde::{PowerSpectrum, Build, One};
+//!use welch_sde::{PowerSpectrum, Build};
 //!
 //!fn main() {
 //!    let n = 1e5 as usize;
@@ -83,8 +83,8 @@
 //!        .map(|_| thread_rng().sample::<f64, StandardNormal>(StandardNormal))
 //!        .collect();
 //!
-//!    let welch: PowerSpectrum<f64, One<f64>> =
-//!        PowerSpectrum::<f64, One<f64>>::builder(&signal).build();
+//!    let welch: PowerSpectrum<f64> =
+//!        PowerSpectrum::<f64>::builder(&signal).build();
 //!    println!("{}", welch);
 //!
 //!    let now = Instant::now();

@@ -1,24 +1,20 @@
 use crate::{Build, Builder, One, Periodogram, PowerSpectrumPeriodogram, Signal, Welch, Window};
-use std::{fmt::Display, marker::PhantomData, ops::Deref};
+use std::{fmt::Display, ops::Deref};
 
 /// Power spectrum
 ///
 /// Computes a `signal` power spectrum from [Welch] [Periodogram]
-pub struct PowerSpectrum<'a, T, W = One<T>, E = Welch<'a, T, W>>
+pub struct PowerSpectrum<'a, T, W = One<T>>
 where
     T: Signal,
     W: Window<T>,
-    E: Display + PowerSpectrumPeriodogram<T>,
 {
-    welch: E,
-    num: PhantomData<&'a T>,
-    win: PhantomData<W>,
+    welch: Welch<'a, T, W>,
 }
-impl<'a, T, W, E> PowerSpectrum<'a, T, W, E>
+impl<'a, T, W> PowerSpectrum<'a, T, W>
 where
     T: Signal,
     W: Window<T>,
-    E: Display + PowerSpectrumPeriodogram<T>,
 {
     /// Returns [Welch] [Builder] providing the `signal`
     pub fn builder(signal: &[T]) -> Builder<T> {
@@ -26,7 +22,7 @@ where
     }
     /// Returns the power spectrum periodogram
     pub fn periodogram(&self) -> Periodogram<T> {
-        self.welch.periodogram()
+        <Welch<'a, T, W> as PowerSpectrumPeriodogram<T>>::periodogram(&self.welch)
     }
 }
 impl<'a, T, W> Build<T, W, PowerSpectrum<'a, T, W>> for Builder<'a, T>
@@ -37,8 +33,6 @@ where
     fn build(&self) -> PowerSpectrum<'a, T, W> {
         PowerSpectrum {
             welch: self.build(),
-            num: PhantomData,
-            win: PhantomData,
         }
     }
 }

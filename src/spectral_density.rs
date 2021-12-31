@@ -1,24 +1,20 @@
 use crate::{Build, Builder, Hann, Periodogram, Signal, SpectralDensityPeriodogram, Welch, Window};
-use std::{fmt::Display, marker::PhantomData, ops::Deref};
+use std::{fmt::Display, ops::Deref};
 
 /// Spectral density
 ///
 /// Computes a `signal` spectral density from [Welch] [Periodogram]
-pub struct SpectralDensity<'a, T, W = Hann<T>, E = Welch<'a, T, W>>
+pub struct SpectralDensity<'a, T, W = Hann<T>>
 where
     T: Signal,
     W: Window<T>,
-    E: Display + SpectralDensityPeriodogram<T>,
 {
-    welch: E,
-    num: PhantomData<&'a T>,
-    win: PhantomData<W>,
+    welch: Welch<'a, T, W>,
 }
-impl<'a, T, W, E> SpectralDensity<'a, T, W, E>
+impl<'a, T, W> SpectralDensity<'a, T, W>
 where
     T: Signal,
     W: Window<T>,
-    E: Display + SpectralDensityPeriodogram<T>,
 {
     /// Returns [Welch] [Builder] providing the `signal` sampled at `fs`Hz
     pub fn builder(signal: &[T], fs: T) -> Builder<T> {
@@ -26,7 +22,7 @@ where
     }
     /// Returns the spectral density periodogram
     pub fn periodogram(&self) -> Periodogram<T> {
-        self.welch.periodogram()
+        <Welch<'a, T, W> as SpectralDensityPeriodogram<T>>::periodogram(&self.welch)
     }
 }
 impl<'a, T, W> Build<T, W, SpectralDensity<'a, T, W>> for Builder<'a, T>
@@ -37,8 +33,6 @@ where
     fn build(&self) -> SpectralDensity<'a, T, W> {
         SpectralDensity {
             welch: self.build(),
-            num: PhantomData,
-            win: PhantomData,
         }
     }
 }

@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 use std::time::Instant;
-use welch_sde::{Build, Hann, SpectralDensity};
+use welch_sde::{Build, SpectralDensity};
 
 fn main() {
     let n = 1e5 as usize;
@@ -17,8 +17,7 @@ fn main() {
         })
         .collect();
 
-    let welch: SpectralDensity<f64, Hann<f64>> =
-        SpectralDensity::<f64, Hann<f64>>::builder(&signal, fs).build();
+    let welch: SpectralDensity<f64> = SpectralDensity::<f64>::builder(&signal, fs).build();
     println!("{}", welch);
     let now = Instant::now();
     let sd = welch.periodogram();
