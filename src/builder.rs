@@ -1,19 +1,20 @@
 use crate::Signal;
 
 /// Generic builder
+#[derive(Debug, Clone)]
 pub struct Builder<'a, T: Signal> {
     /// number of segments (`k`)
-    pub n_segment: usize,
+    pub(crate) n_segment: usize,
     /// size of each segment (`l`)
-    pub segment_size: usize,
+    pub(crate) segment_size: usize,
     /// segment overlapping fraction (`0<a<1`)
-    pub overlap: f64,
+    pub(crate) overlap: f64,
     /// maximum size of the discrete Fourier transform (`p`)
-    pub dft_max_size: usize,
+    pub(crate) dft_max_size: usize,
     /// the signal to estimate the spectral density for
-    pub signal: &'a [T],
+    pub(crate) signal: &'a [T],
     /// the signal sampling frequency `[Hz]`
-    pub fs: Option<T>,
+    pub(crate) fs: Option<T>,
 }
 impl<'a, T: Signal> Builder<'a, T> {
     /// Creates a Welch [Builder] from a given signal with `k=4` and `a=0.5`

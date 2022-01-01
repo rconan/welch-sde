@@ -1,7 +1,8 @@
 use crate::Signal;
+use std::fmt::Debug;
 
 /// Signal windowing interface
-pub trait Window<T: Signal> {
+pub trait Window<T: Signal>: Debug + Clone {
     /// Creates a new window of size `n`
     fn new(n: usize) -> Self;
     /// Return the window sampling weights
@@ -12,6 +13,7 @@ pub trait Window<T: Signal> {
     fn sum_sqr(&self) -> T;
 }
 /// Hann window
+#[derive(Debug, Clone)]
 pub struct Hann<T> {
     weight: Vec<T>,
 }
@@ -40,6 +42,7 @@ impl<T: Signal> Window<T> for Hann<T> {
 /// One window
 ///
 /// A window where all weights are 1
+#[derive(Debug, Clone)]
 pub struct One<T> {
     weight: Vec<T>,
 }

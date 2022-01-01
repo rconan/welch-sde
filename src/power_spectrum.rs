@@ -6,6 +6,7 @@ type WelchOne<'a, T> = Welch<'a, T, One<T>>;
 /// Power spectrum
 ///
 /// Computes a `signal` power spectrum from [Welch] [Periodogram] using [One] [Window](crate::Window)
+#[derive(Debug, Clone)]
 pub struct PowerSpectrum<'a, T: Signal>(WelchOne<'a, T>);
 impl<'a, T: Signal> PowerSpectrum<'a, T> {
     /// Returns [Welch] [Builder] given the `signal`

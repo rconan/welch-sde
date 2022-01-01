@@ -115,18 +115,18 @@
 //!```
 
 mod builder;
+mod periodogram;
 mod power_spectrum;
 mod spectral_density;
 mod welch;
 mod window;
-use std::ops::Deref;
-
 pub use builder::Builder;
 use num_traits::Float;
+pub use periodogram::{Periodogram, PowerSpectrumPeriodogram, SpectralDensityPeriodogram};
 pub use power_spectrum::PowerSpectrum;
 use rustfft::FftNum;
 pub use spectral_density::SpectralDensity;
-pub use welch::{PowerSpectrumPeriodogram, SpectralDensityPeriodogram, Welch};
+pub use welch::Welch;
 pub use window::{Hann, One, Window};
 
 /// The trait the signal type `T` must implement
@@ -141,28 +141,4 @@ impl Signal for f32 {}
 pub trait Build<T: Signal, W: Window<T>, E> {
     /// Returns a struct `E` initialized according to the [Builder] settings
     fn build(&self) -> E;
-}
-
-/// Signal periodogram
-#[derive(Debug)]
-pub struct Periodogram<T: Signal>(T, Vec<T>);
-impl<T: Signal> Deref for Periodogram<T> {
-    type Target = [T];
-
-    fn deref(&self) -> &Self::Target {
-        self.1.as_slice()
-    }
-}
-impl<T: Signal> Periodogram<T> {
-    /// Returns the frequency vector in Hz
-    pub fn frequency(&self) -> Vec<T> {
-        let n = self.1.len();
-        let fs = self.0;
-        (0..n)
-            .map(|i| {
-                T::from_usize(i).unwrap() * fs * T::from_f32(0.5).unwrap()
-                    / T::from_usize(n - 1).unwrap()
-            })
-            .collect()
-    }
 }

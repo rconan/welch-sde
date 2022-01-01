@@ -6,6 +6,7 @@ type WelchHann<'a, T> = Welch<'a, T, Hann<T>>;
 /// Spectral density
 ///
 /// Computes a `signal` spectral density from [Welch] [Periodogram] using [Hann] [Window](crate::Window)
+#[derive(Debug, Clone)]
 pub struct SpectralDensity<'a, T: Signal>(WelchHann<'a, T>);
 impl<'a, T: Signal> SpectralDensity<'a, T> {
     /// Returns [Welch] [Builder] given the `signal` sampled at `fs`Hz
