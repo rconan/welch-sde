@@ -119,12 +119,13 @@ mod power_spectrum;
 mod spectral_density;
 mod welch;
 mod window;
+use std::ops::Deref;
+
 pub use builder::Builder;
 use num_traits::Float;
 pub use power_spectrum::PowerSpectrum;
 use rustfft::FftNum;
 pub use spectral_density::SpectralDensity;
-use std::ops::Deref;
 pub use welch::{PowerSpectrumPeriodogram, SpectralDensityPeriodogram, Welch};
 pub use window::{Hann, One, Window};
 
@@ -138,6 +139,7 @@ impl Signal for f32 {}
 
 /// [Builder] trait
 pub trait Build<T: Signal, W: Window<T>, E> {
+    /// Returns a struct `E` initialized according to the [Builder] settings
     fn build(&self) -> E;
 }
 

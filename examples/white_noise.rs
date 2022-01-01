@@ -9,7 +9,7 @@ fn main() {
         .map(|_| thread_rng().sample::<f64, StandardNormal>(StandardNormal))
         .collect();
 
-    let welch: PowerSpectrum<f64> = PowerSpectrum::<f64>::builder(&signal).build();
+    let welch: PowerSpectrum<f64> = PowerSpectrum::builder(&signal).build();
     println!("{}", welch);
 
     let now = Instant::now();

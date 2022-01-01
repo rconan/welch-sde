@@ -17,7 +17,7 @@ fn main() {
         })
         .collect();
 
-    let welch: SpectralDensity<f64> = SpectralDensity::<f64>::builder(&signal, fs).build();
+    let welch: SpectralDensity<f64> = SpectralDensity::builder(&signal, fs).build();
     println!("{}", welch);
     let now = Instant::now();
     let sd = welch.periodogram();

@@ -1,6 +1,6 @@
 use crate::Signal;
 
-/// Builder for [Welch](crate::Welch)
+/// Generic builder
 pub struct Builder<'a, T: Signal> {
     /// number of segments (`k`)
     pub n_segment: usize,
@@ -16,7 +16,7 @@ pub struct Builder<'a, T: Signal> {
     pub fs: Option<T>,
 }
 impl<'a, T: Signal> Builder<'a, T> {
-    /// Creates a Welch [Builder] from a given signal
+    /// Creates a Welch [Builder] from a given signal with `k=4` and `a=0.5`
     pub fn new(signal: &'a [T]) -> Self {
         let k: usize = 4;
         let a: f64 = 0.5;
