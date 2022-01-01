@@ -1,8 +1,7 @@
 use crate::Signal;
-use std::fmt::Debug;
 
 /// Signal windowing interface
-pub trait Window<T: Signal>: Debug + Clone {
+pub trait Window<T: Signal>: std::fmt::Debug + Clone {
     /// Creates a new window of size `n`
     fn new(n: usize) -> Self;
     /// Return the window sampling weights
