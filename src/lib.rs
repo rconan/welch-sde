@@ -129,7 +129,7 @@ impl Signal for f64 {}
 impl Signal for f32 {}
 
 /// [Builder] trait
-pub trait Build<T: Signal, W: Window<T>, E> {
+pub trait Build<E> {
     /// Returns a struct `E` initialized according to the [Builder] settings
     fn build(&self) -> E;
 }

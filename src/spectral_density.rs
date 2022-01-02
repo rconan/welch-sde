@@ -18,7 +18,7 @@ impl<'a, T: Signal> SpectralDensity<'a, T> {
         <WelchHann<'a, T> as SpectralDensityPeriodogram<T>>::periodogram(&self.0)
     }
 }
-impl<'a, T: Signal> Build<T, Hann<T>, SpectralDensity<'a, T>> for Builder<'a, T> {
+impl<'a, T: Signal> Build<SpectralDensity<'a, T>> for Builder<'a, T> {
     fn build(&self) -> SpectralDensity<'a, T> {
         SpectralDensity(self.build())
     }

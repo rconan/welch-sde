@@ -18,7 +18,7 @@ impl<'a, T: Signal> PowerSpectrum<'a, T> {
         <WelchOne<'a, T> as PowerSpectrumPeriodogram<T>>::periodogram(&self.0)
     }
 }
-impl<'a, T: Signal> Build<T, One<T>, PowerSpectrum<'a, T>> for Builder<'a, T> {
+impl<'a, T: Signal> Build<PowerSpectrum<'a, T>> for Builder<'a, T> {
     fn build(&self) -> PowerSpectrum<'a, T> {
         PowerSpectrum(self.build())
     }

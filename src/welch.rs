@@ -48,7 +48,7 @@ impl<'a, T: Signal, W: Window<T>> Display for Welch<'a, T, W> {
         write!(f, " - dft size         : {:>6}", self.dft_size)
     }
 }
-impl<'a, T: Signal, W: Window<T>> Build<T, W, Welch<'a, T, W>> for Builder<'a, T> {
+impl<'a, T: Signal, W: Window<T>> Build<Welch<'a, T, W>> for Builder<'a, T> {
     fn build(&self) -> Welch<'a, T, W> {
         let mut k = self.n_segment;
         let mut l = self.segment_size;
