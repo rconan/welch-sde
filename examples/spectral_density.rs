@@ -25,8 +25,7 @@ fn main() {
         "Spectral density estimated in {}ms",
         now.elapsed().as_millis()
     );
-    let noise_floor =
-        2. * sd.iter().skip(sd.len() / 2).cloned().sum::<f64>() / ((sd.len() / 2) as f64);
+    let noise_floor = sd.iter().cloned().sum::<f64>() / sd.len() as f64;
     println!("Noise floor: {:.3}", noise_floor);
 
     let _: complot::LinLog = (

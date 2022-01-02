@@ -5,6 +5,19 @@ use rustfft::{algorithm::Radix4, Fft, FftDirection};
 use std::fmt::Display;
 
 /// Welch spectral density estimator
+///
+/// Assuming the signal is divided into `k` segments, each of length `l`, and each segment
+/// overlap a fraction `a` of  the previous segment, the relation of `k`, `l` and `a` to
+/// the signal length `n` is `n=kl - (k-1)la`.
+///
+/// The minimum number of segment is chosen to be `k=4`, and the segment length is derived
+/// from `l = trunc(n/(k(1-a)+a))`.
+///
+/// Each segment of length `l` is  multiplied by the predetermined window and zero--padded
+/// to the size `m = 2^p` where `p=ceil(log2(l))`.
+/// The maximum allowed value for `p` is 12 (i.e. `m=4096`).
+/// If with only 4 segments (`k=4`), `l` is greater than 4096, then `l` is set to 4096 and
+/// the increased number of segments is derived from `k=(n-la)/(l(1-a))`.
 #[derive(Debug, Clone)]
 pub struct Welch<'a, T: Signal, W: Window<T>> {
     /// number of segments (`k`)

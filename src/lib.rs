@@ -4,23 +4,58 @@
 //! zero-mean* signal  involves splitting the signal in overlapping segments, multiplying
 //! each segment with a predeterming window and computing the discrete Fourier transform
 //! of each windowed segment.
-//! The spectral density is then given by the average of the squared magnitude
+//! The periodogram is then given by the average of the squared magnitude
 //! of each Fourier transform.
+//! Only the halve of the power spectrum that corresponds to positive frequencies is returned,
+//! both halves beeing symmetric with respect to the zero frequency.
 //!
-//! Assuming the signal is divided into `k` segments, each of length `l`, and each segment
-//! overlap a fraction `a` of  the previous segment, the relation of `k`, `l` and `a` to
-//! the signal length `n` is `n=kl - (k-1)la`.
 //!
-//! The minimum number of segment is chosen to be `k=4`, and the segment length is derived
-//! from `l = trunc(n/(k(1-a)+a))`.
+//! From the periodogram, one can derive either the **spectral density** or the **power spectrum**.
+//! Both differs with respect to the scaling of the periodogram.
+//! For the **spectral density**, the periodogram is divided by the product of the sampling frequency with the sum of the squared window samples.
+//! For the **power spectrum**, the periodogram is divided by the square of the sum of the window samples.
 //!
-//! Each segment of length `l` is  multiplied by the predetermined window and zero--padded
-//! to the size `m = 2^p` where `p=ceil(log2(l))`.
-//! The maximum allowed value for `p` is 12 (i.e. `m=4096`).
-//! If with only 4 segments (`k=4`), `l` is greater than 4096, then `l` is set to 4096 and
-//! the increased number of segments is derived from `k=(n-la)/(l(1-a))`.
+//! The Welch algorithm is implemented in the [Welch] structure.
+//! For convenience, 2 new types (that encapsulates [Welch]) are provided, [SpectralDensity] and [PowerSpectrum], to compute  the **spectral density** and the **power spectrum**, respectively.
+//! [SpectralDensity] uses a [Hann] window whereas [PowerSpectrum] does not use any window.
+//!
+//! Custom windows can be used with [Welch] if they implement the [Window] trait.
+//! The signal is either a [single](f32) or [double](f64) floating point array.
 //!
 //! ## Examples
+//! ### Power spectrum
+//!```
+//!use rand::prelude::*;
+//!use rand_distr::StandardNormal;
+//!use std::time::Instant;
+//!use welch_sde::{Build, PowerSpectrum};
+//!
+//!fn main() {
+//!    let n = 1e6 as usize;
+//!    let signal: Vec<f64> = (0..n)
+//!        .map(|_| 1.234_f64.sqrt() * thread_rng().sample::<f64, StandardNormal>(StandardNormal))
+//!        .collect();
+//!    {
+//!        let mean = signal.iter().cloned().sum::<f64>() / n as f64;
+//!        let variance = signal.iter().map(|s| *s - mean).map(|x| x * x).sum::<f64>() / n as f64;
+//!        println!("Signal variance: {:.3}", variance);
+//!    }
+//!
+//!    let welch: PowerSpectrum<f64> = PowerSpectrum::builder(&signal).build();
+//!    println!("{}", welch);
+//!
+//!    let now = Instant::now();
+//!    let ps = welch.periodogram();
+//!    println!(
+//!        "Power spectrum estimated in {}ms",
+//!        now.elapsed().as_millis()
+//!    );
+//!    {
+//!        let variance = 2. * ps.iter().sum::<f64>();
+//!        println!("Signal variance from power spectrum: {:.3}", variance);
+//!    }
+//!}
+//!```
 //! ### Spectral density
 //! ```
 //!use rand::prelude::*;
@@ -52,8 +87,7 @@
 //!        "Spectral density estimated in {}ms",
 //!        now.elapsed().as_millis()
 //!    );
-//!    let h = sd.len() / 2;
-//!    let noise_floor = 2. * sd.iter().skip(h).cloned().sum::<f64>() / (h as f64);
+//!    let noise_floor = sd.iter().cloned().sum::<f64>() / sd.len() as f64;
 //!    println!("Noise floor: {:.3}", noise_floor);
 //!
 //!    let _: complot::LinLog = (
@@ -65,49 +99,6 @@
 //!            "spectral_density.png",
 //!            xlabel = "Frequency [Hz]",
 //!            ylabel = "Spectral density [s^2/Hz]"
-//!        ),
-//!    )
-//!        .into();
-//!}
-//!```
-//! ### Power spectrum
-//!```
-//!use rand::prelude::*;
-//!use rand_distr::StandardNormal;
-//!use std::time::Instant;
-//!use welch_sde::{PowerSpectrum, Build};
-//!
-//!fn main() {
-//!    let n = 1e5 as usize;
-//!    let signal: Vec<f64> = (0..n)
-//!        .map(|_| thread_rng().sample::<f64, StandardNormal>(StandardNormal))
-//!        .collect();
-//!
-//!    let welch: PowerSpectrum<f64> =
-//!        PowerSpectrum::<f64>::builder(&signal).build();
-//!    println!("{}", welch);
-//!
-//!    let now = Instant::now();
-//!    let ps = welch.periodogram();
-//!    println!(
-//!        "Power spectrum estimated in {}ms",
-//!        now.elapsed().as_millis()
-//!    );
-//!
-//!    let mean = ps[0];
-//!    let variance = 2. * ps.iter().sum::<f64>();
-//!    println!("mean    : {:.3}", mean);
-//!    println!("variance: {:.3}", variance);
-//!
-//!    let _: complot::LinLog = (
-//!        ps.frequency()
-//!            .into_iter()
-//!            .zip(&(*ps))
-//!            .map(|(x, &y)| (x, vec![y])),
-//!        complot::complot!(
-//!            "power_spectrum.png",
-//!            xlabel = "Frequency [Hz]",
-//!            ylabel = "Power spectrum [s^2]"
 //!        ),
 //!    )
 //!        .into();
